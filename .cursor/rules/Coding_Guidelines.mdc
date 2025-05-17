@@ -1,0 +1,49 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# AI Agent Coding Guidelines
+
+## I. Code Comprehension & Analysis:
+
+1.  **Thoroughly Review All Relevant Files:** Before writing or modifying any code, meticulously read and understand all related files within the codebase. Do not make assumptions about functionality or structure.
+2.  **Comprehensive Codebase Understanding:** Strive to gain a holistic understanding of the project's architecture, existing patterns, and conventions. Look at all the code, not just isolated snippets.
+3.  **Avoid Assumptions:** Base your decisions on evidence found within the code and documentation. If something is unclear, seek to clarify it by examining related modules or documentation before proceeding.
+
+## II. Code Creation & Modification:
+
+1.  **File Header Documentation:**
+    *   **Requirement:** For every new file created and every existing file significantly modified, ensure a comprehensive header comment is present at the top of the file.
+    *   **Content:** This header should clearly explain:
+        *   **Purpose of the File:** What is the primary responsibility or role of this file/module within the application?
+        *   **Key Functionality:** What are the main operations or logic implemented in this file? Describe what is happening.
+        *   **Important Notes & Context:** Include any other crucial information, such as dependencies, critical algorithms, design choices, or known limitations relevant to understanding and maintaining the code in this file.
+2.  **Write Good, Clean, Maintainable Code:**
+    *   **Follow Best Practices & Style Guides:** Adhere rigorously to established coding best practices (e.g., SOLID, DRY, KISS) and any project-specific or language-specific style guides. Consistency is key.
+    *   **Readability & Organization:**
+        *   Structure code logically with clear separation of concerns.
+        *   Use meaningful variable and function names that clearly convey intent.
+        *   Keep functions/methods short and focused on a single responsibility.
+        *   Employ consistent formatting and indentation.
+    *   **Self-Documenting Code:** Aim to write code that is as clear as possible, reducing the need for excessive comments. Good naming and structure contribute significantly to this.
+    *   **Effective Commenting:**
+        *   Comment complex algorithms, non-obvious logic, or important design decisions ("why" something is done, not just "what").
+        *   Ensure comments are kept up-to-date with code changes.
+        *   Avoid commenting obvious code.
+    *   **Modularity & Reusability:** Design components that are modular and can be reused where appropriate. Avoid code duplication.
+3.  **Be Careful: Anticipate and Handle Issues:**
+    *   **Edge Case Analysis:** Systematically identify and consider edge cases, boundary conditions, and invalid inputs for any code you write.
+    *   **Error Handling:** Implement robust and graceful error handling.
+        *   Catch specific exceptions rather than generic ones where appropriate.
+        *   Provide informative error messages or logging to aid debugging.
+        *   Ensure the application can recover from or appropriately report errors without crashing or entering an inconsistent state.
+    *   **Resource Management:** Ensure proper management of resources (e.g., file handles, network connections, memory allocation), especially in languages without automatic garbage collection for all resource types. Use try-with-resources or similar constructs where available.
+    *   **Security Considerations:** Be mindful of potential security vulnerabilities (e.g., injection attacks, data exposure, insecure defaults). Apply security best practices relevant to the context.
+    *   **Concurrency (if applicable):** If dealing with concurrent operations, carefully consider thread safety, race conditions, deadlocks, and data consistency.
+    *   **Testing Implications:** Think about how your code will be tested. Write code that is testable, and consider what unit tests would be needed to verify its correctness, including for edge cases and error conditions.
+
+## III. General Principles:
+
+1.  **Diligent Examination:** Always "look at everything" relevant to the task at hand. Your primary goal is to understand deeply before acting.
+2.  **Quality First:** Prioritize writing high-quality, well-documented, and robust code.

@@ -1,0 +1,240 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## MCP Development Context (from README.md)
+
+This document summarizes key aspects of Model Context Protocol (MCP) development to aid in providing assistance.
+
+### 1. Core MCP Concepts
+*   **Purpose**: Standardize communication between AI models and external tools/services.
+*   **Goals**: Interoperability, simplified tool integration, standardized data exchange, support for complex workflows.
+*   **Components**:
+    *   **MCP Server**: Exposes capabilities (tools, resources, prompt templates).
+    *   **MCP Client**: Consumes capabilities (often an LLM-based agent).
+    *   **Tools**: Functions with defined schemas (name, description, input parameters, output). Schema derived from Python function signature, type hints, and docstring.
+    *   **Resources**: Read-only data identified by URIs. Schema derived similarly.
+    *   **Prompt Templates**: Server-defined, reusable prompt structures. Schema derived similarly.
+
+### 2. Development Environment
+*   **Python**: Version 3.8+ recommended.
+*   **Package Manager**: `uv` (recommended) or `pip` with virtual environments (`venv`).
+    *   Using `uv`: `uv venv` then `source .venv/bin/activate` (Linux/macOS) or `.venv\Scripts\activate` (Windows).
+    *   Using `pip` and `venv`: `python -m venv .venv` then `source .venv/bin/activate` (Linux/macOS) or `.venv\Scripts\activate` (Windows).
+*   **MCP Libraries**:
+    *   `mcp`: Core Python library. Install with `uv pip install mcp` or `pip install mcp`.
+    *   `fastmcp`: For rapid server development, often part of `mcp` or a utility built on it.
+*   **Node.js & npm/npx**: Required for the MCP Inspector.
+
+### 3. Building Your MCP Server with `FastMCP`
+*   **Initialization**:
+    ```python
+    from mcp.server.fastmcp import FastMCP
+
+    # Give your server a name
+    mcp_server = FastMCP(server_name="my_awesome_mcp_server")
+    ```
+*   **Defining Tools**:
+    *   Uses `@mcp_server.tool()` decorator.
+    *   Python type hints (e.g., `user_id: int`, `-> Dict[str, Any]`) define input/output schemas.
+    *   Function docstring is used as the tool's description. The `Args:` section in the docstring details parameters.
+    ```python
+    from typing import Dict, Any
+
+    @mcp_server.tool()
+    def get_user_details(user_id: int, verbose: bool = False) -> Dict[str, Any]:
+        """
+        Fetches details for a given user ID.
+
+        Args:
+            user_id: The unique identifier for the user.
+            verbose: If true, returns additional details.
+
+        Returns:
+            A dictionary containing user information.
+        """
+        if user_id == 1:
+            details = {"name": "Ada Lovelace", "email": "ada@example.com"}
+            if verbose:
+                details["contribution"] = "First computer programmer"
+            return details
+        return {"error": "User not found"}
+    ```
+*   **Defining Resources**:
+    *   Uses `@mcp_server.resource(uri=...)` decorator.
+    *   URIs can be static (e.g., `server://status`) or dynamic with path parameters (e.g., `data://config/{config_name}`).
+    ```python
+    @mcp_server.resource(uri="server://status")
+    def get_server_status() -> str:
+        """Returns the current operational status of the server."""
+        return "Server is operational and feeling great!"
+
+    @mcp_server.resource(uri="data://config/{config_name}")
+    def get_config_value(config_name: str) -> str:
+        """Retrieves a specific configuration value.
+        Example: data://config/version
+        """
+        configs = {"version": "1.0.2", "mode": "production"}
+        return configs.get(config_name, "Config not found")
+    ```
+*   **Defining Prompt Templates**:
+    *   Uses `@mcp_server.prompt()` decorator.
+    *   Function name, arguments, type hints, and docstring define the template's schema and behavior.
+    ```python
+    @mcp_server.prompt()
+    def generate_summary_request(text_to_summarize: str, style: str = "concise") -> str:
+        """Creates a prompt to ask an LLM to summarize the given text.
+
+        Args:
+            text_to_summarize: The text content to be summarized.
+            style: The desired style of the summary (e.g., 'concise', 'detailed').
+        """
+        return f"Please summarize the following text in a {style} manner: \n\n{text_to_summarize}"
+    ```
+
+### 4. Running Your MCP Server
+*   Typically run inside `if __name__ == "__main__":` block.
+*   Method: `mcp_server.run(transport=..., **kwargs)`
+*   **Transport Options**:
+    *   **`stdio`**: Communicates over `stdin`/`stdout`. For local servers.
+        ```python
+        mcp_server.run(transport='stdio')
+        ```
+    *   **`sse` (Server-Sent Events)**: Network transport over HTTP. For remote servers.
+        ```python
+        mcp_server.run(transport='sse', port=8001)
+        ```
+    *   **`streamable-http`**: HTTP-based, can be stateful or stateless.
+        ```python
+        # Stateful (default)
+        mcp_server.run(transport='streamable-http', port=8002)
+        print("MCP Server started on streamable-http port 8002")
+
+        # Stateless
+        # mcp_server_stateless = FastMCP(server_name="my_stateless_server", stateless_http=True)
+        # mcp_server_stateless.run(transport='streamable-http', port=8003)
+        ```
+
+### 5. Testing Your Server with the MCP Inspector
+*   Web-based tool for testing and debugging.
+*   **Execution**: `npx @modelcontextprotocol/inspector <command_to_run_stdio_server_or_url>`
+*   **Launching Examples**:
+    *   `stdio` server (`my_server.py`): `npx @modelcontextprotocol/inspector python my_server.py`
+    *   `stdio` server with `uv` (`my_server.py`): `npx @modelcontextprotocol/inspector uv run my_server.py`
+    *   Network server (e.g., SSE on `http://localhost:8001/sse`):
+        `npx @modelcontextprotocol/inspector http://localhost:8001/sse`
+        (Then select transport type and enter URL in Inspector UI if needed).
+*   **Capabilities**: View discovered tools, resources, prompt templates; inspect schemas; invoke tools; view resource content; render prompt templates; check protocol errors.
+*   **Inspector Proxy Address**: May be needed in some environments.
+
+### 6. MCP Client Interaction
+*   **Core Client Responsibilities**:
+    1.  Establish Connection (transport-specific).
+    2.  Initialize Session (MCP handshake, initial capability discovery).
+    3.  Discover Capabilities (list tools, resources, prompt templates and their schemas).
+    4.  Invoke Capabilities (execute tool, retrieve resource, render prompt).
+    5.  Process Responses (results, data, errors).
+    6.  Manage Session Lifecycle (close connection).
+*   **Python Client Libraries (`mcp` SDK)**:
+    *   `mcp.client.stdio.stdio_client`
+    *   `mcp.client.sse.sse_client`
+    *   `mcp.client.streamable_http.streamablehttp_client`
+*   **Conceptual Python Client Workflow (Async)**:
+    ```python
+    import asyncio
+    from mcp import ClientSession, StdioServerParameters, types # Or network equivalents like URL for network clients
+    from mcp.client.stdio import stdio_client # Or sse_client, streamablehttp_client
+    from contextlib import AsyncExitStack # For robust resource management
+
+    async def run_mcp_client():
+        # 1. Define Server Parameters (stdio example)
+        server_params = StdioServerParameters(
+            command="python", # Or 'uv run'
+            args=["my_server.py"], # Path to server script
+            # env=None # Optional environment variables
+        )
+        # For network clients: e.g., url="http://localhost:8001/sse"
+
+        async with AsyncExitStack() as exit_stack:
+            # 2. Establish Connection (stdio example)
+            read_stream, write_stream = await exit_stack.enter_async_context(
+                stdio_client(server_params)
+                # For SSE: sse_client(url="http://localhost:8001/sse")
+                # For HTTP: streamablehttp_client(url="http://localhost:8002/mcp/")
+            )
+
+            # 3. Initialize Session
+            session = await exit_stack.enter_async_context(
+                ClientSession(read_stream, write_stream)
+            )
+            
+            initialization_response = await session.initialize(
+                # client_info=types.ClientInformation(name="MyAwesomeClient", version="1.0")
+            )
+            server_name = initialization_response.server_info.name if initialization_response.server_info else 'Unknown Server'
+            print(f"Connected to server: {server_name}")
+
+            # 4. Discover Capabilities
+            tools_response = await session.list_tools()
+            print("\nAvailable Tools:")
+            for tool in tools_response.tools:
+                print(f"- {tool.name}: {tool.description}")
+
+            prompts_response = await session.list_prompt_templates()
+            print("\nAvailable Prompt Templates:")
+            for pt in prompts_response.prompt_templates:
+                print(f"- {pt.name}: {pt.description}")
+
+            # 5. Invoke Capabilities
+            try:
+                tool_result = await session.call_tool(
+                    name="get_user_details", 
+                    arguments={"user_id": 1, "verbose": True}
+                )
+                print(f"\nTool 'get_user_details' result: {tool_result.content}")
+            except Exception as e:
+                print(f"Error calling tool: {e}")
+
+            try:
+                resource_content = await session.get_resource_content(
+                    uri="server://status"
+                )
+                print(f"\nResource 'server://status' content: {resource_content.content}")
+            except Exception as e:
+                print(f"Error getting resource: {e}")
+            
+            try:
+                rendered_prompt = await session.render_prompt_template(
+                    name="generate_summary_request",
+                    arguments={"text_to_summarize": "MCP is cool!", "style": "enthusiastic"}
+                )
+                print(f"\nRendered prompt: {rendered_prompt.prompt}")
+            except Exception as e:
+                print(f"Error rendering prompt: {e}")
+
+        # 6. Session Management: Handled by AsyncExitStack
+
+    if __name__ == "__main__":
+        asyncio.run(run_mcp_client())
+    ```
+*   **Key Client-Side Considerations**:
+    *   **Asynchronous Operations**: Use `async`/`await`.
+    *   **Error Handling**: For network, protocol, and tool execution failures.
+    *   **Schema Adherence**: Respect server-provided schemas.
+    *   **Dynamic Discovery**: Fetch capabilities at runtime, don't hardcode.
+    *   **State Management**: For multi-turn interactions or stateful servers (e.g., some `streamable-http` configs).
+
+### 7. Deploying MCP Servers (Conceptual)
+*   Network Transport: Use `sse` or `streamable-http`.
+*   Packaging: Containerize (e.g., Docker) with Python environment and dependencies.
+*   Cloud Platforms: AWS, Google Cloud, Azure, Render, Fly.io.
+*   Configuration: Manage via environment variables or config files.
+*   Process Management: Use `systemd`, PaaS process manager, or Kubernetes.
+*   Networking: Configure firewalls, load balancers, DNS.
+
+### 8. Further Learning & Resources
+*   **Official MCP Specification**: Search for "Model Context Protocol specification".
+*   **Python MCP SDK**: `https://github.com/modelcontextprotocol/python-sdk`
+*   **FastMCP Repository**: Likely within SDK examples or related projects.
+*   **MCP Inspector**: `https://github.com/modelcontextprotocol/inspector` 
