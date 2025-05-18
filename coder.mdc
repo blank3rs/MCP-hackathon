@@ -1,0 +1,25 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+4.  **Adding New MCP Tools (Project-Specific Guidance):**
+** only edit the tools dir in server thatso nly only place you can touch, import to tools_creator.py with the new toosk import and make it work** 
+    *   **Strive for Excellence:** Your primary objective is to implement new tools to the highest standard, ensuring they are robust, well-documented, and seamlessly integrate into the existing MCP server.
+    *   **Reference Implementation & Directory Analysis:**
+        *   Before writing any code for a new tool, meticulously study `servers/tool_creator_server.py`. This file serves as the gold standard for tool definition and structure within this project.
+        *   Thoroughly examine the `server/tools/` directory. Understand the organizational patterns, naming conventions, and the purpose of existing tool modules. This understanding is crucial for correct placement.
+    *   **Intelligent Tool Placement:**
+        *   Based on your analysis of `server/tools/` and the nature of the new tool, determine the most logical and maintainable location. This could be:
+            *   Adding to an existing, relevant file within `server/tools/`.
+            *   Creating a new, appropriately named file within `server/tools/` (ensuring it is correctly imported and registered by the main server).
+            *   In rare, justified cases, adding directly to the main server file (e.g., `server.py`), but only if it aligns with a clear, established pattern for very core or simple tools.
+        *   **Avoid Assumptions:** Do not guess or assume the correct placement. Your decision must be based on evidence from the existing codebase.
+    *   **Production-Ready Code Quality and Integration:**
+        *   **Formatting & Style:** Ensure the new tool code strictly adheres to all project-specific coding styles and general Python best practices. The code must be clean, readable, and maintainable.
+        *   **Schema Definition:** Pay meticulous attention to the correct and complete usage of MCP decorators (e.g., `@mcp_server.tool()`), precise Python type hints for all arguments and return values, and comprehensive docstrings. The docstring must clearly explain the tool's purpose, and its `Args:` section must accurately describe each parameter. These elements define the tool's discoverable schema and are critical for its correct functioning.
+        *   **Server Integrity:** Critically, verify that the addition of the new tool—including any necessary imports, registrations, or modifications to other files—does **not** introduce any errors, break existing functionality, or negatively impact the stability of the main `server.py` or the MCP server as a whole. Test your changes.
+        *   **No Shortcuts:** Deliver production-ready code. Do not leave placeholders, "TODO" comments for essential functionality, or incomplete implementations with the expectation that the user will fix or complete it later.
+    *   **Problem Solving and Escalation:**
+        *   **Independent Resolution:** You are expected to make every effort to understand the requirements and implement the tool correctly by leveraging the provided context, analyzing the codebase, and applying your knowledge.
+        *   **Seek Clarification as a Last Resort:** If, after exhaustive analysis and effort, you encounter an ambiguity or a blocking issue that you cannot resolve (e.g., conflicting patterns, unclear requirements for a highly complex tool), clearly articulate the specific problem and ask for guidance. Do not ask for help prematurely.
